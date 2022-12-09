@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?><metadata>
+    <idinfo>
+        <citation>
+            <citeinfo>
+                <origin/>
+                <title>Water Districts</title>
+                <onlink>https://gis.water.ca.gov/arcgis/rest/services/Boundaries/i03_WaterDistricts/FeatureServer</onlink>
+            </citeinfo>
+        </citation>
+        <descript>
+            <abstract>This dataset represents polygon boundaries of all public water agencies in California including public water systems, agricultural water districts, urban water districts, Federal and State water contractors, wholesalers, retailers, and other public or private utilities that deliver water to the end user.</abstract>
+            <purpose>The purpose of the data is to assist the public in identifying Water Agencies in California.</purpose>
+        </descript>
+        <keywords>
+            <theme>
+                <themekt>ISO 19115 Topic Categories</themekt>
+                <themekey>boundaries</themekey>
+            </theme>
+            <theme>
+                <themekt>None</themekt>
+                <themekey>Southern California</themekey>
+                <themekey>2013</themekey>
+                <themekey>farming</themekey>
+                <themekey>California</themekey>
+                <themekey>current</themekey>
+                <themekey>2015</themekey>
+                <themekey>Central California</themekey>
+                <themekey>agencies</themekey>
+                <themekey>boundaries</themekey>
+                <themekey>Water purveyors</themekey>
+                <themekey>Bay Area</themekey>
+                <themekey>water agency</themekey>
+                <themekey>2014</themekey>
+                <themekey>Northern California</themekey>
+                <themekey>present</themekey>
+                <themekey>water district</themekey>
+                <themekey>California Delta</themekey>
+                <themekey>districts</themekey>
+                <themekey>California Natural Resources Agency</themekey>
+                <themekey>CAOpenData</themekey>
+                <themekey>California Department of Water Resources</themekey>
+                <themekey>water</themekey>
+                <themekey>Delta</themekey>
+                <themekey>water purveyors</themekey>
+            </theme>
+        </keywords>
+        <accconst>Other Constraints</accconst>
+        <useconst>The associated data are considered DWR enterprise GIS data, which meet all appropriate requirements of the DWR GIS Spatial Data Standards. DWR makes no warranties or guarantees, either expressed or implied, as to the completeness, accuracy or correctness of the data, nor accepts or assumes any liability arising from or for any incorrect, incomplete or misleading subject data.</useconst>
+        <datacred>DWR: Northern Region, North Central Region, South Central Region, Southern Region. USBR. Contact: gis@water.ca.gov</datacred>
+    </idinfo>
+    <metainfo>
+        <metd>20180813</metd>
+        <metc>
+            <cntinfo>
+                <cntorgp>
+                    <cntorg>California Department of Water Resources</cntorg>
+                </cntorgp>
+            </cntinfo>
+        </metc>
+        <metstdn>FGDC Content Standard for Digital Geospatial Metadata</metstdn>
+        <metstdv>FGDC-STD-001-1998</metstdv>
+        <mettc>local time</mettc>
+    </metainfo>
+</metadata>

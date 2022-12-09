@@ -1,0 +1,254 @@
+---
+title: "EnviroScreen"
+author: "Renee LaManna"
+date: "10/13/2022"
+output: html_document
+---
+#st( clip_intersect
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+# attach necessary packages
+library(tidyverse)
+library(here)
+library(sf)
+library(broom)
+library(ggmap)
+library(scales)
+library(rstudioapi)
+library(maps)
+library(rnaturalearth)
+library(rnaturalearthdata)
+register_google(key = "AIzaSyA8dgbFrPgkHzRlQiLPhRVfHe3KWhqhi80")
+library(tmap)
+library(ggthemes)
+```
+
+```{r}
+# Read in data and clean
+enviro_raw <- read_csv(here("data", "calenviroscreen40.csv")) %>% 
+  janitor::clean_names() 
+
+enviro_sf <- read_sf(here("data/CES4 Final Shapefile.shp")) %>% 
+  janitor::clean_names() %>% 
+  na.omit()
+
+enviro_test <- enviro_raw %>% 
+  filter(census_tract ==  "6019000300")
+
+
+Sys.setenv(SHAPE_RESTORE_SHX="YES")
+final_bakers <- read_sf(here("data/CES4_Bakersfield_Clip.shp")) %>% 
+  janitor::clean_names() %>% 
+  mutate(gw_p_category = case_when(
+    gw_threat_p <= 9.99 ~ "0-10 (Lowest Scores)",
+    gw_threat_p <= 19.99 ~ "10-20",
+    gw_threat_p <= 29.99 ~ "20-30",
+    gw_threat_p <= 39.99 ~ "30-40",
+    gw_threat_p <= 49.99 ~ "40-50",
+    gw_threat_p <= 59.99 ~ "50-60",
+    gw_threat_p <= 69.99 ~ "60-70",
+    gw_threat_p <= 79.99 ~ "70-80",
+    gw_threat_p <= 89.99 ~ "80-90",
+    gw_threat_p <= 100 ~ "90-100 (Highest Scores)")) %>% 
+  mutate(drink_wat_category = case_when(
+    drink_wat_p <= 9.99 ~ "0-10 (Lowest Scores)",
+    drink_wat_p <= 19.99 ~ "10-20",
+    drink_wat_p <= 29.99 ~ "20-30",
+    drink_wat_p <= 39.99 ~ "30-40",
+    drink_wat_p <= 49.99 ~ "40-50",
+    drink_wat_p <= 59.99 ~ "50-60",
+    drink_wat_p<= 69.99 ~ "60-70",
+    drink_wat_p <= 79.99 ~ "70-80",
+    drink_wat_p <= 89.99 ~ "80-90",
+    drink_wat_p <= 100 ~ "90-100 (Highest Scores)"))  %>% 
+   mutate(drink_wat_category = case_when(
+    drink_wat_p <= 9.99 ~ "0-10 (Lowest Scores)",
+    drink_wat_p <= 19.99 ~ "10-20",
+    drink_wat_p <= 29.99 ~ "20-30",
+    drink_wat_p <= 39.99 ~ "30-40",
+    drink_wat_p <= 49.99 ~ "40-50",
+    drink_wat_p <= 59.99 ~ "50-60",
+    drink_wat_p<= 69.99 ~ "60-70",
+    drink_wat_p <= 79.99 ~ "70-80",
+    drink_wat_p <= 89.99 ~ "80-90",
+    drink_wat_p <= 100 ~ "90-100 (Highest Scores)")) %>% 
+  mutate(educat_p_category = case_when(
+    educat_p <= 9.99 ~ "0-10 (Lowest Scores)",
+    educat_p <= 19.99 ~ "10-20",
+    educat_p <= 29.99 ~ "20-30",
+    educat_p <= 39.99 ~ "30-40",
+    educat_p <= 49.99 ~ "40-50",
+    educat_p <= 59.99 ~ "50-60",
+    educat_p<= 69.99 ~ "60-70",
+    educat_p <= 79.99 ~ "70-80",
+    educat_p <= 89.99 ~ "80-90",
+    educat_p <= 100 ~ "90-100 (Highest Scores)"))
+  
+
+
+```
+
+```{r}
+# Test with tract 6019000300, example provided on CalEnviroScreenReport
+
+# Test with just direct indicators
+         
+enviro_test_calc <- enviro_raw %>% 
+  mutate("direct" = (sum(groundwater_threats_pctl, imp_water_bodies_pctl, drinking_water_pctl))/3) %>% 
+  mutate("indirect" = (sum(pesticides_pctl,haz_waste_pctl)/2)*0.5) %>% 
+  mutate("avg_env" = (sum(indirect,direct))/1.5)
+```
+
+```{r}
+### ENVIRONMENTAL INDICATORS
+
+# 1. Find average percentiles of direct and indirect indicators giving indirect half the weight as direct
+# 2. Find the average of indirect and direct together and divide by total weight - "avg_env" 
+# 3. Find max value of "avg_env"
+# 4. Divide avg_env by the max_env_score and scale by multiplying by 10
+
+enviro_calcs <- enviro_raw %>% 
+  mutate("direct" = rowMeans(enviro_raw[,c(18,30,34)])) %>% 
+  mutate("indirect" = rowMeans(enviro_raw[,c(22,32)])*0.5) 
+
+enviro_calcs <- enviro_calcs %>%  
+  mutate("avg_env" = rowSums(enviro_calcs[,c(59,60)])/1.5) 
+
+max_env_score <- max(enviro_calcs$avg_env, na.rm = TRUE) 
+
+enviro_calcs <- enviro_calcs %>% 
+mutate("scaled_comp_env" = (avg_env/max_env_score)*10) 
+
+
+### POPULATION INDICATORS
+
+# Finding statewide max with just our 5 pop. variables and applying them to entire dataset
+  
+enviro_calcs <- enviro_calcs %>% 
+  mutate("avg_pop" = rowMeans(enviro_calcs[,c(47,49,51,53,55)])*0.8) 
+
+max_pop_score <- max(enviro_calcs$avg_pop, na.rm = TRUE) 
+  
+enviro_calcs <- enviro_calcs %>%   
+  mutate("scaled_comp_pop" = (avg_pop / max_pop_score)*10) %>% 
+  mutate("water_risk_score" = (scaled_comp_env*scaled_comp_pop))  
+
+
+### PERCENTILES
+
+enviro_final <- enviro_calcs %>% 
+  mutate(PCT = ntile(water_risk_score, 100)) 
+
+```
+
+```{r}
+# Saving updated .csv
+
+write.csv(enviro_final, "C:\\Documents\\WR-GP\\enviro.csv", row.names=FALSE)
+```
+
+``` {r}
+# Testing merge of calculations on .csv and .sf to get geometry
+enviro_sf_merged <- merge(enviro_sf, enviro_final, by.x = "tract", by.y = "census_tract")
+
+```
+
+
+### OLD CALCS
+
+# function for exposure indicators
+
+direct_fxn <- function(x){x / max(x)}
+indirect_fxn <- function(x){x/max(x)*.5}  
+
+enviro_scaled <- enviro_raw %>% 
+  
+# Direct indicators
+  
+# Environmental
+  mutate(drink_scaled = direct_fxn(enviro_raw$drinking_water)) %>% 
+  mutate(groundwater_scaled = direct_fxn(enviro_raw$groundwater_threats)) %>%
+  mutate(imp_water_scaled = direct_fxn(enviro_raw$imp_water_bodies))
+ 
+# Indirect indicators
+  mutate(pest_scaled = indirect_fxn(enviro_raw$pesticides)) %>% 
+  mutate(haz_wastes_scaled = indirect_fxn(enviro_raw$haz_waste)) %>% 
+ 
+
+
+
+# Calculating pollution burden scores
+
+enviro_scaled %>% 
+  mutate(pollution_scaled = sum(ozone_scaled:cleanup_sites_scaled))
+
+
+# Calculating final scores with our chosen indicators
+
+
+
+
+
+```{r}
+### MAPPING BAKERSFIELD W/ OLD SHP
+
+final_bakers %>% st_crs()
+final_bakers %>% raster::crs()
+
+
+
+mapBound <- c(-119.2650, 35.2500, -119.0000, 35.4425) 
+
+man_basemap <- ggmap::get_stamenmap(bbox = mapBound, zoom = 13 , messaging = FALSE, maptype = 'terrain')
+
+
+ggmap(man_basemap) +
+  geom_sf(data = final_bakers, aes(fill = gw_p_category), color = "white", size = 0.1, alpha = 0.75,inherit.aes = FALSE) +
+  coord_sf(crs = st_crs(4326)) +
+  theme_map()+
+  theme(legend.key.size = unit(0.8, 'cm'), #change legend key size
+        legend.key.height = unit(0.3, 'cm'), #change legend key height
+        legend.key.width = unit(0.2, 'cm'), #change legend key width
+        legend.title = element_text(size=8), #change legend title font size
+        legend.text = element_text(size=6), #change legend text font size
+        legend.position = c(0.01,0.62),
+        legend.title.align = 0.5) +
+        scale_fill_manual(name = "Groundwater Threats \n  Percentile", values = c("wheat1", "lightgoldenrod","goldenrod1", "darkorange", "darkorange3", "coral4", "firebrick4")) 
+
+ggmap(man_basemap) +
+  geom_sf(data = final_bakers, aes(fill = drink_wat_category), color = "white", size = 0.1, alpha = 0.75,inherit.aes = FALSE) +
+  coord_sf(crs = st_crs(4326)) +
+  theme_map()+
+  theme(legend.key.size = unit(0.8, 'cm'), #change legend key size
+        legend.key.height = unit(0.3, 'cm'), #change legend key height
+        legend.key.width = unit(0.2, 'cm'), #change legend key width
+        legend.title = element_text(size=8), #change legend title font size
+        legend.text = element_text(size=6), #change legend text font size
+        legend.position = c(0.01,0.62),
+        legend.title.align = 0.5) +
+        scale_fill_manual(drop=FALSE, name = "Drinking Water \n  Contaminants Percentile", values = c("wheat1", "lightgoldenrod","goldenrod1", "darkorange", "darkorange3", "coral4", "firebrick4")) 
+        
+ggmap(man_basemap) +
+  geom_sf(data = final_bakers, aes(fill = educat_p_category), color = "white", size = 0.1, alpha = 0.75,inherit.aes = FALSE) +
+  coord_sf(crs = st_crs(4326)) +
+  theme_map()+
+  theme(legend.key.size = unit(0.8, 'cm'), #change legend key size
+        legend.key.height = unit(0.3, 'cm'), #change legend key height
+        legend.key.width = unit(0.2, 'cm'), #change legend key width
+        legend.title = element_text(size=8), #change legend title font size
+        legend.text = element_text(size=6), #change legend text font size
+        legend.position = c(0.01,0.62),
+        legend.title.align = 0.5) +
+        scale_fill_manual(drop=FALSE, name = "Education Attainment \n   Percentile", values = c("wheat1", "lightgoldenrod","goldenrod1", "darkorange", "darkorange3", "coral4", "firebrick4", "firebrick3", "blue", "red"), limits = c(10,20,30,40,50,60,70,80,90,100))  
+ 
+
+  
+```
+
+
+
+
+Figure 1. City of Bakersfield water district is shown above. The final scores include both population characterisitics and pollution burdens of the district. A higher score indicates a more at risk population. 
+
+
